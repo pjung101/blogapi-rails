@@ -1,11 +1,20 @@
+require 'jwt'
+
 class UsersController < ApplicationController
   def create
-    User.create(user_params)
+    user = User.create(user_params)
+    if user.valid?
+      token = JWT.encode { user_id: user.id }, ENV['JWT_SECRET'], 'HS256'
+      render json: {
+        token: token
+      }
+      return
+    end
 
-    render json: {}
+    render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
   end
 
   def user_params
-    params.require(:user).permit(:email, :password, :full_name, :username)
+    params.permit(user: [:email, :password, :full_name, :username])[:user] or {}
   end
 end
